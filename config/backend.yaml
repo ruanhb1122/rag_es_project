@@ -1,0 +1,50 @@
+# 数据库配置
+database:
+  mysql:
+    host: localhost
+    port: 3306
+    username: root
+    password: 123456
+    database: es_rag_demo
+    charset: utf8mb4
+    pool_size: 10
+    max_overflow: 20
+    pool_timeout: 30
+
+# Elasticsearch配置
+elasticsearch:
+  hosts:
+    - http://localhost:9200
+  username:
+  password:
+  timeout: 30
+  max_retries: 3
+  retry_on_timeout: true
+
+# MinIO配置
+minio:
+  endpoint: localhost:9001
+  access_key: admin
+  secret_key: admin123
+  secure: false
+  bucket_name: rag-documents
+
+# 应用配置
+app:
+  host: 0.0.0.0
+  port: 5001
+  debug: true
+  secret_key: your-secret-key-here
+
+# 向量化配置
+embedding:
+  model_name: text-embedding-v3
+  # 使用环境变量 所以这里就不配置了
+  # api_key: your-openai-api-key
+  dimensions: 1024
+
+# 文本分割配置
+text_splitter:
+  chunk_size: 500
+  chunk_overlap: 100
+  separator: "\n\n"

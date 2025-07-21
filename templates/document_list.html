@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档列表管理 - RAG 知识库系统</title>
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 Bootstrap Table CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
+
+    <link rel="stylesheet" href="../static/css/style.css">
+
+</head>
+<body>
+    <header>
+        <h1>RAG 智能知识库系统</h1>
+        <nav>
+            <a href="/">首页</a>
+            <a href="/upload">文档上传</a>
+            <a href="/search">知识库搜索</a>
+            <a href="/document_list" class="active">文档列表管理</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="document-list-container">
+            <h2>文档列表管理</h2>
+             <table id="table"
+                    data-toggle="table"
+                    data-url="/api/documents/page"
+                    data-pagination="true"
+                    data-page-size="10"
+                    data-page-list="[10, 25, 50, 100]"
+                    data-query-params="queryParams"
+                    data-side-pagination="server">
+                <thead>
+                    <tr>
+                        <th data-field="kb_id">所属知识库</th>
+                        <th data-field="document_id">文档ID</th>
+                        <th data-field="document_name">文档名称</th>
+                        <th data-field="document_status" data-formatter="statusFormatter">文档状态</th>
+                        <th data-field="operate" data-formatter="operateFormatter">操作</th>
+                    </tr>
+                </thead>
+            </table>
+        </section>
+    </main>
+
+    <!-- 状态切换确认模态框 -->
+    <div class="modal fade" id="statusConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">确认操作</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <p id="modalMessage"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="confirmBtn">确认</button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+
+    <footer>
+        <p>&copy; 2025 RAG 知识库系统 | 基于大语言模型的检索增强生成方案</p>
+    </footer>
+
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 引入 Bootstrap Table JS -->
+    <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.js"></script>
+    <!-- 初始化表格 -->
+    <script>
+        queryParams = function (params) {
+            var temp = {
+                rows: params.limit,
+                page: (params.offset / params.limit) + 1,
+                sort: params.sort,
+                sortOrder: params.order,
+            };
+            return temp;
+        }
+
+        $(function () {
+            $('#table').bootstrapTable();
+        });
+
+        // 状态列格式化函数
+        function statusFormatter(value, row, index) {
+            const statusClass = value === 1 ? 'on' : 'off';
+            const statusText = value === 1 ? '启用' : '禁用';
+            return `
+                <div class="toggle-btn btn-sm ${statusClass}" data-id="${row.document_id}" data-status="${value}">
+                    <span class="toggle-text">${statusText}</span>
+                </div>
+            `;
+        }
+
+        // 操作列格式化函数
+        function operateFormatter(value, row, index) {
+            return [
+                `<button class="btn btn-info btn-sm detail-button" data-id="${row.document_id}">详情</button>`,
+                `<button class="btn btn-danger btn-sm delete-button" data-id="${row.document_id}">删除</button>`
+            ].join(' ');
+        }
+
+        // 为状态切换按钮添加点击事件监听器
+        $(document).on('click', '.toggle-btn', function () {
+            const id = $(this).data('id');
+            const currentStatus = $(this).data('status');
+            const newStatus = currentStatus === 1 ? 0 : 1;
+            const url = `/api/documents/modify_status`; // 假设的后端接口 URL
+            const $modal = $('#statusConfirmModal');
+            const $message = $('#modalMessage');
+            const $confirmBtn = $('#confirmBtn');
+            const _this = $(this);
+
+            // 设置模态框提示信息
+            $message.text(`确定要${newStatus === 1 ? '启用' : '禁用'}该文档吗？`);
+            $modal.modal('show'); // 显示模态框
+
+            // 确认按钮点击处理
+            $confirmBtn.off('click').on('click', function() {
+                const req_param = { 'document_id': id, 'document_status': newStatus }
+                // alert('1........' + JSON.stringify(req_param));
+
+                // fetch(url, {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json'
+                //     },
+                //     body: JSON.stringify(req_param)
+                // })
+                // .then(response => response.json())
+                // .then(data => console.log('Success:', data))
+                // .catch(error => console.error('Error:', error))
+                // .finally(() => {
+                //     $modal.modal('hide');
+                // });
+
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(req_param),
+                    success: function (response) {
+                        console.log('2response........' , JSON.stringify(response));
+                        if (response.success) {
+                            _this.data('status', newStatus);
+                            // 2. 同步更新 HTML 的 data-status 属性（可选，用于调试或依赖 HTML 属性的场景）
+                            _this.attr('data-status', newStatus); 
+                            // 3. 更新视觉状态（关键！）
+                            const statusText = newStatus === 1 ? '启用' : '禁用';
+                            _this.html(`<span class="toggle-text">`+statusText+`</span>`); // 更新按钮文本
+                            _this.removeClass('on').removeClass('off');
+                            _this.addClass(newStatus === 1 ? 'on' : 'off');
+                        } else {
+                            alert('操作失败');
+                        }
+                    }.bind(this),
+                    error: function (xhr) {
+                        alert('操作失败：' + xhr.error);
+                    }
+                });
+                $modal.modal('hide');
+            });
+        });
+
+        // 为详情按钮添加点击事件监听器
+        $(document).on('click', '.detail-button', function () {
+            const documentId = $(this).data('id'); // 假设按钮上有 data-id 属性存储文档ID
+            window.location.href = `/chunk_list?document_id=${documentId}`;
+        });
+
+        // 为删除按钮添加点击事件监听器
+        $(document).on('click', '.delete-button', function () {
+            if (confirm('确定要删除该文档吗？')) {
+                const id = $(this).data('id');
+                const url = `/api/documents/${id}`; // 假设的后端接口 URL
+                $.ajax({
+                    url: url,
+                    method: 'DELETE',
+                    success: function (response) {
+                        // if (response.success) {
+                        //     $('#table').bootstrapTable('remove', {
+                        //         field: 'document_id',
+                        //         values: [id]
+                        //     });
+                        //     alert('文档删除成功');
+                        // } else {
+                        //     alert('文档删除失败');
+                        // }
+
+                        // 刷新表格数据
+                        $('#table').bootstrapTable('refresh');
+                    },
+                    error: function () {
+                        alert('请求出错，请稍后重试');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

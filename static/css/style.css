@@ -1,0 +1,288 @@
+/* 基础样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem 2rem;
+}
+
+nav {
+    margin-top: 1rem;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 1.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+nav a.active, nav a:hover {
+    background-color: #34495e;
+}
+
+main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+footer {
+    text-align: center;
+    padding: 2rem;
+    margin-top: 2rem;
+    color: #7f8c8d;
+    border-top: 1px solid #ddd;
+}
+
+/* 按钮样式 */
+.my-btn {
+    display: inline-block;
+    background-color: #3498db;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn {
+    color: white;
+}
+
+/*.bootstrap-table .btn {*/
+/*    padding: .5rem .5rem;*/
+/*}*/
+
+.btn:hover {
+    background-color: #2980b9;
+}
+
+
+.my-btn:hover {
+    background-color: #2980b9;
+}
+
+.btn-primary {
+    background-color: #2ecc71;
+}
+
+.btn-primary:hover {
+    background-color: #27ae60;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.required {
+    color: #e74c3c;
+}
+
+.hint {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+}
+
+/* 首页样式 */
+.intro {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.intro h2 {
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+.intro p {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    font-size: 1.1rem;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* 上传页面样式 */
+.upload-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.upload-container h2 {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* 搜索页面样式 */
+.search-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.search-container h2 {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.results {
+    margin-top: 2rem;
+}
+
+.result-item {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.result-item .content {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+/* 提示和结果样式 */
+.success {
+    background-color: #dff0d8;
+    color: #3c763d;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.error {
+    background-color: #f2dede;
+    color: #a94442;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.loading {
+    color: #3498db;
+    padding: 1rem;
+    text-align: center;
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}
+
+.suggestions {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+.suggestions ul {
+    list-style: none;
+    margin-top: 0.5rem;
+}
+
+.suggestions li {
+    margin-bottom: 0.3rem;
+}
+
+.suggestions a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.suggestions a:hover {
+    text-decoration: underline;
+}
+
+
+
+ /* 自定义开关按钮样式 */
+.toggle-btn {
+    display: inline-block;
+    position: relative;
+    width: 60px;
+    height: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle-btn.on {
+    background-color: #28a745; /* 绿色表示启用 */
+}
+
+.toggle-btn.off {
+    background-color: #dc3545; /* 红色表示禁用 */
+}
+
+.toggle-btn::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: white;
+    transition: left 0.3s;
+}
+
+.toggle-btn.on::after {
+    left: 33px;
+}
+
+.toggle-btn.off::after {
+    left: 3px;
+}
+
+.toggle-text {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+}

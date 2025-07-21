@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分块列表管理 - RAG 知识库系统</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 Bootstrap Table CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
+
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+
+
+    <header>
+        <h1>RAG 智能知识库系统</h1>
+        <nav>
+            <a href="/">首页</a>
+            <a href="/upload">文档上传</a>
+            <a href="/search">知识库搜索</a>
+            <a href="/document_list" class="active">文档列表管理</a>
+        </nav>
+        <button type="button" class="btn btn-secondary float-end" onclick="goBack()">返回文档列表</button>
+    </header>
+
+    <main>
+        <section class="chunk-list-container">
+            <h2>分块列表管理</h2>
+            <table id="chunkTable"
+                   data-toggle="table"
+                   data-url="/api/chunks/page"
+                   data-pagination="true"
+                   data-page-size="10"
+                   data-page-list="[10, 25, 50, 100]"
+                   data-query-params="chunkQueryParams"
+                   data-side-pagination="server">
+                <thead>
+                    <tr>
+                        <th data-field="chunk_id">分块ID</th>
+                        <th data-field="document_id">所属文档ID</th>
+                        <th data-field="chunk_content">分块内容</th>
+                        <th data-field="chunk_status" data-formatter="statusFormatter">分块状态</th>
+                        <th data-field="operate" data-formatter="chunkOperateFormatter">操作</th>
+                    </tr>
+                </thead>
+            </table>
+        </section>
+    </main>
+
+
+      <!-- 状态切换确认模态框 -->
+    <div class="modal fade" id="statusConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">确认操作</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <p id="modalMessage"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="confirmBtn">确认</button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 RAG 知识库系统 | 基于大语言模型的检索增强生成方案</p>
+    </footer>
+
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 引入 Bootstrap Table JS -->
+    <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.js"></script>
+    <!-- 初始化表格 -->
+    <script>
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        var documentId = getUrlParameter('document_id');
+
+        chunkQueryParams = function (params) {
+            var temp = {
+                rows: params.limit,
+                page: (params.offset / params.limit) + 1,
+                sort: params.sort,
+                sortOrder: params.order,
+                document_id: documentId
+            };
+            return temp;
+        }
+
+        $(function () {
+            var documentId = getUrlParameter('document_id');
+            $('#chunkTable').bootstrapTable();
+        });
+
+
+        // 状态列格式化函数
+        function statusFormatter(value, row, index) {
+            const statusClass = value === 1 ? 'on' : 'off';
+            const statusText = value === 1 ? '启用' : '禁用';
+            return `
+                <div class="toggle-btn btn-sm ${statusClass}" data-id="${row.chunk_id}" data-status="${value}">
+                    <span class="toggle-text">${statusText}</span>
+                </div>
+            `;
+        }
+
+        // 操作列格式化函数
+        function chunkOperateFormatter(value, row, index) {
+            return [
+                `<button class="btn btn-danger btn-sm chunk-delete-button" data-id="${row.chunk_id}">删除</button>`
+            ].join(' ');
+        }
+
+
+        // 为状态切换按钮添加点击事件监听器
+        $(document).on('click', '.toggle-btn', function () {
+            const id = $(this).data('id');
+            const currentStatus = $(this).data('status');
+            const newStatus = currentStatus === 1 ? 0 : 1;
+            const url = `/api/chunks/modify_status`; // 假设的后端接口 URL
+            const $modal = $('#statusConfirmModal');
+            const $message = $('#modalMessage');
+            const $confirmBtn = $('#confirmBtn');
+            const _this = $(this);
+
+            // 设置模态框提示信息
+            $message.text(`确定要${newStatus === 1 ? '启用' : '禁用'}该文档吗？`);
+            $modal.modal('show'); // 显示模态框
+
+            // 确认按钮点击处理
+            $confirmBtn.off('click').on('click', function() {
+                const req_param = { 'chunk_id': id, 'chunk_status': newStatus }
+
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(req_param),
+                    success: function (response) {
+                        console.log('2response........' , JSON.stringify(response));
+                        if (response.success) {
+                            _this.data('status', newStatus);
+                            // 2. 同步更新 HTML 的 data-status 属性（可选，用于调试或依赖 HTML 属性的场景）
+                            _this.attr('data-status', newStatus);
+                            // 3. 更新视觉状态（关键！）
+                            const statusText = newStatus === 1 ? '启用' : '禁用';
+                            _this.html(`<span class="toggle-text">`+statusText+`</span>`); // 更新按钮文本
+                            _this.removeClass('on').removeClass('off');
+                            _this.addClass(newStatus === 1 ? 'on' : 'off');
+                        } else {
+                            alert('操作失败');
+                        }
+                    }.bind(this),
+                    error: function (xhr) {
+                        alert('操作失败：' + xhr.error);
+                    }
+                });
+                $modal.modal('hide');
+            });
+        });
+
+        // 为删除按钮添加点击事件监听器
+        $(document).on('click', '.chunk-delete-button', function () {
+            if (confirm('确定要删除该分块吗？')) {
+                const id = $(this).data('id');
+                const url = `/api/chunks/${id}`; // 假设的后端接口 URL
+                $.ajax({
+                    url: url,
+                    method: 'DELETE',
+                    success: function (response) {
+                        // 刷新表格数据
+                        $('#chunkTable').bootstrapTable('refresh');
+                    },
+                    error: function () {
+                        alert('请求出错，请稍后重试');
+                    }
+                });
+            }
+        });
+
+        function goBack() {
+            window.location.href = '/document_list';
+            // 刷新文档列表页面
+            if (window.opener && !window.opener.closed) {
+                window.opener.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

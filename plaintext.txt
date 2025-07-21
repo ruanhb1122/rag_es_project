@@ -1,0 +1,35 @@
+rag_project_complete/
+├── backend/
+│   ├── app.py
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   └── backend.yaml
+│   ├── core/
+│   │   ├── database.py
+│   │   ├── elasticsearch_client.py
+│   │   └── minio_client.py
+│   ├── models/
+│   │   ├── document.py
+│   │   └── chunk.py
+│   ├── services/
+│   │   ├── document_service.py
+│   │   ├── chunk_service.py
+│   │   └── search_service.py
+│   ├── utils/
+│   │   ├── text_splitter.py
+│   │   └── embedding_utils.py
+│   ├── controllers/
+│   │   ├── document_controller.py
+│   │   └── search_controller.py
+│   └── requirements.txt
+└── frontend/
+    ├── static/
+    │   ├── css/
+    │   │   └── style.css
+    │   └── js/
+    │       └── main.js
+    └── templates/
+        ├── index.html
+        ├── upload.html
+        └── search.html

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG 知识库系统</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>RAG 智能知识库系统</h1>
+        <nav>
+            <a href="/">首页</a>
+            <a href="/upload"  class="active">文档上传</a>
+            <a href="/search">知识库搜索</a>
+            <a href="/document_list">文档列表管理</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="upload-container">
+            <h2>文档上传</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="kbId">知识库ID <span class="required">*</span></label>
+                    <input type="text" id="kbId" name="kb_id" required placeholder="请输入知识库ID">
+                </div>
+
+                <div class="form-group">
+                    <label for="file">选择文档 <span class="required">*</span></label>
+                    <input type="file" id="file" name="file" accept=".txt,.pdf,.docx" required>
+                    <p class="hint">支持格式：TXT、PDF、DOCX</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="createdBy">上传人</label>
+                    <input type="text" id="createdBy" name="created_by" placeholder="默认：system">
+                </div>
+
+                <button type="submit" class="my-btn btn btn-primary">上传文档</button>
+            </form>
+
+            <div id="result" class="result"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 RAG 知识库系统 | 基于大语言模型的检索增强生成方案</p>
+    </footer>
+
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        function initUploadForm() {
+            const uploadForm = document.getElementById('uploadForm');
+            if (!uploadForm) return;
+
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const resultDiv = document.getElementById('result');
+
+                console.log('formData.....', formData);
+
+                // 显示加载状态
+                resultDiv.innerHTML = '<div class="loading">正在上传...</div>';
+
+                // 发送请求
+                fetch('/api/documents/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h3>上传成功</h3>
+                                <p>文档ID: ${data.document_id}</p>
+                                <p>文档名称: ${formData.get('file').name}</p>
+                            </div>
+                        `;
+                        uploadForm.reset();
+                    } else {
+                        resultDiv.innerHTML = `<div class="error">错误: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<div class="error">上传失败: ${error.message}</div>`;
+                });
+            });
+        }
+
+        initUploadForm();
+    </script>
+
+
+</body>
+</html>
