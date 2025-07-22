@@ -32,13 +32,15 @@ class SearchService:
                 logger.warning(f"索引不存在: {index_name}")
                 return []
 
+            min_relevance_score = min_score if use_score_relevance else 0.1
+
             # 根据搜索类型执行搜索
             if search_type == SearchType.TEXT:
-                response = self._text_search(index_name, query, top_k)
+                response = self._text_search(index_name, query, top_k, min_score=min_relevance_score)
             elif search_type == SearchType.VECTOR:
-                response = self._vector_search(index_name, query, top_k, min_score if use_score_relevance else 0.0)
+                response = self._vector_search(index_name, query, top_k, min_score=min_relevance_score)
             elif search_type == SearchType.HYBRID:
-                response = self._hybrid_search(index_name, query, top_k, text_weight, vector_weight)
+                response = self._hybrid_search(index_name, query, top_k, text_weight, vector_weight, min_score=min_relevance_score)
             else:
                 raise ValueError(f"不支持的搜索类型: {search_type}")
 
@@ -55,11 +57,12 @@ class SearchService:
                     'metadata': hit['_source'].get('metadata', {})
                 }
 
-                # 启用阈值 and 分数低于Score阈值
-                if use_score_relevance and result['score'] < min_score:
-                    pass
-                else:
-                    results.append(result)
+                results.append(result)
+                # 启用阈值 and 分数低于Score阈值  其实在es查询时已经过滤了，这里不再重复过滤
+                # if use_score_relevance and result['score'] < min_score:
+                #     pass
+                # else:
+                #     results.append(result)
 
             logger.info(f"搜索完成: {len(results)}个结果")
             return results
@@ -68,13 +71,14 @@ class SearchService:
             logger.error(f"搜索失败: {e}")
             return []
 
-    def _text_search(self, index_name: str, query: str, size: int) -> Dict[str, Any]:
+    def _text_search(self, index_name: str, query: str, size: int, min_score: float) -> Dict[str, Any]:
         """全文搜索"""
         return es_client.text_search(
             index_name=index_name,
             query_text=query,
-            fields=["chunk_content", "document_name", "kb_name"],
-            size=size
+            fields=["id", "document_id", "chunk_content", "document_name", "kb_id", "metadata"],
+            size=size,
+            min_score=min_score
         )
 
     def _vector_search(self, index_name: str, query: str, size: int, min_score: float) -> Dict[str, Any]:
@@ -88,12 +92,13 @@ class SearchService:
         return es_client.vector_search(
             index_name=index_name,
             vector=query_vector,
+            fields=["id", "document_id", "chunk_content", "document_name", "kb_id", "metadata"],
             size=size,
             min_score=min_score
         )
 
     def _hybrid_search(self, index_name: str, query: str, size: int,
-                       text_weight: float, vector_weight: float) -> Dict[str, Any]:
+                       text_weight: float, vector_weight: float, min_score: float) -> Dict[str, Any]:
         """混合搜索"""
         # 获取查询向量
         query_vector = embedding_utils.get_embedding(query)
@@ -107,7 +112,8 @@ class SearchService:
             vector=query_vector,
             text_weight=text_weight,
             vector_weight=vector_weight,
-            size=size
+            size=size,
+            min_score=min_score
         )
 
     def get_similar_chunks(self, chunk_id: str, kb_id: str, top_k: int = 5) -> List[Dict[str, Any]]:

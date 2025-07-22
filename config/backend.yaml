@@ -48,3 +48,7 @@ text_splitter:
   chunk_size: 500
   chunk_overlap: 100
   separator: "\n\n"
+
+# 文本分数有一个合理的最大值，这里使用1:
+retrieval:
+  text_max_value: 20.0
