@@ -6,51 +6,50 @@
 ## 项目结构
 
 ```
-rag_project/
-├── backend/                   # 后端服务 
-│   ├── app.py                 # Flask应用入口
-│   ├── config/
-│   │   ├── __init__.py
-│   │   ├── config.py          # 配置文件读取工具
-│   │   └── backend.yaml       # 配置文件
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── database.py        # 数据库连接和ORM
-│   │   ├── elasticsearch_client.py  # ES客户端封装
-│   │   └── minio_client.py    # MinIO客户端封装
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── chunk.py           # 分块模型
-│   │   └── document.py        # 文档模型
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── document_service.py # 文档服务
-│   │   ├── chunk_service.py   # 分块服务
-│   │   └── search_service.py  # 搜索服务
-│   ├── controllers/
-│   │   ├── __init__.py
-│   │   ├── document_controller.py  # 文档控制器
-│   │   └── search_controller.py    # 搜索控制器
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── text_splitter.py   # 文本分割工具
-│   │   └── embedding_utils.py # 向量化工具
-│   └── requirements.txt
-├── frontend/                   #前端页面
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── style.css
-│   │   ├── js/
-│   │   │   └── main.js
-│   │   └── images/
-│   ├── templates/
-│   │   ├── index.html
-│   │   ├── upload.html
-│   │   └── search.html
-│   └── components/           # Vue组件预留目录
+rag_es_project/
+├── app.py                 # Flask应用入口
+├── config/
+│   └── backend.yaml       # 配置文件
+├── core/
+│   ├── __init__.py
+│   ├── database.py        # 数据库连接和ORM
+│   ├── elasticsearch_client.py  # ES客户端封装
+│   └── minio_client.py    # MinIO客户端封装
+├── models/
+│   ├── __init__.py
+│   ├── chunk.py            # 分块模型
+│   ├── document.py         # 文档模型
+│   └── dto.py
+├── services/
+│   ├── __init__.py
+│   ├── chunk_service.py        # 分块服务
+│   ├── document_service.py     # 文档服务
+│   └── search_service.py       # 搜索服务
+├── controllers/
+│   ├── __init__.py
+│   ├── document_controller.py  # 分块控制器
+│   ├── document_controller.py  # 文档控制器
+│   └── search_controller.py    # 搜索控制器
+├── utils/
+│   ├── __init__.py
+│   ├── config.py               # 配置文件读取工具
+│   ├── text_splitter.py        # 文本分割工具
+│   └── embedding_utils.py      # 向量化工具
+├── static/                     #前端静态资源
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   └── main.js
+│   └── images/
+├── templates/                  #前端页面
+│   ├── index.html
+│   ├── upload.html
+│   ├── chunk_list.html
+│   ├── document_list.html
+│   └── search.html
+├── requirements.txt            #项目包依赖管理
 └── README.md
 ```
-
 
 
 
