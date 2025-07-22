@@ -1,6 +1,8 @@
-from flask import Blueprint, request, jsonify
-from services.search_service import SearchService, SearchType
 import logging
+
+from flask import Blueprint, request, jsonify
+
+from services.search_service import SearchService, SearchType
 
 logger = logging.getLogger(__name__)
 search_bp = Blueprint('search', __name__)
@@ -56,6 +58,36 @@ def search():
 
     except Exception as e:
         logger.error(f"搜索接口异常: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@search_bp.route('chat', methods=['POST'])
+def chat():
+    """聊天接口"""
+    try:
+
+        request_json_data = request.get_json()
+
+        kb_id = request_json_data.get('kb_id')
+        query = request_json_data.get('query', '')
+        if not kb_id:
+            return jsonify({"error": "知识库ID不能为空"}), 400
+
+        if not query:
+            return jsonify({"error": "搜索内容不能为空"}), 400
+
+        # answer
+        answer = search_service.chat(
+            kb_id=kb_id,
+            query=query,
+        )
+
+        return jsonify({
+            "success": True,
+            "answer": answer
+        }), 200
+
+    except Exception as e:
+        logger.error(f"chat接口异常: {e}")
         return jsonify({"error": str(e)}), 500
 
 

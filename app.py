@@ -39,6 +39,11 @@ def create_app():
         """渲染搜索页面"""
         return render_template('search.html')
 
+    @app.route('/chat')
+    def chat():
+        """渲染搜索页面"""
+        return render_template('chat.html')
+
     @app.route('/document_list')
     def document_list():
         """渲染文档列表页面"""

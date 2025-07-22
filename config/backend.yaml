@@ -52,3 +52,14 @@ text_splitter:
 # 文本分数有一个合理的最大值，这里使用1:
 retrieval:
   text_max_value: 20.0
+
+# 大语言模型配置
+llm:
+  base_url: https://api.deepseek.com
+  model_name: deepseek-chat
+  # 使用环境变量 所以这里就不配置了
+  api_key: your-openai-api-key
+  # 模型输出的温度参数，控制生成内容的随机性
+  # 取值范围通常为0-1，0表示结果最确定、最一致，1表示结果最随机、最多样
+  # 此处设置为0，适合需要精确、稳定输出的场景
+  temperature: 0

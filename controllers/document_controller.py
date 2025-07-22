@@ -1,10 +1,8 @@
-from flask import Blueprint, request, jsonify
-from rich import traceback
-
-from models.dto import DocumentStatusModify,ChunkStatusModify
-from services.document_service import DocumentService
 import logging
 
+from flask import Blueprint, request, jsonify
+
+from services.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
 document_bp = Blueprint('document', __name__)

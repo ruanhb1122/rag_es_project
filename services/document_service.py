@@ -1,19 +1,19 @@
-from typing import List, Dict, Any, Optional, Tuple
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc
-import uuid
+import logging
 import os
 import tempfile
-import logging
+import uuid
+from typing import List, Dict, Any, Optional, Tuple
+
+from sqlalchemy import desc, asc
 from werkzeug.datastructures import FileStorage
+
 from core.database import db_manager, PaginationQuery
 from core.minio_client import minio_client
-from core.elasticsearch_client import es_client
-from models.document import Document
 from models.chunk import Chunk
-from utils.text_splitter import TextSplitter
+from models.document import Document
 from services.chunk_service import ChunkService
 from utils.embedding_utils import embedding_utils
+from utils.text_splitter import TextSplitter
 
 logger = logging.getLogger(__name__)
 

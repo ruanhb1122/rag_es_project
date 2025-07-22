@@ -1,12 +1,12 @@
-from typing import List, Dict, Any, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc
-import uuid
 import logging
+import uuid
+from typing import List, Dict, Any, Optional
+
+from sqlalchemy import desc, asc
+
 from core.database import db_manager, PaginationQuery
 from core.elasticsearch_client import es_client
 from models.chunk import Chunk
-from utils.embedding_utils import embedding_utils
 
 logger = logging.getLogger(__name__)
 

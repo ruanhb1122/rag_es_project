@@ -1,9 +1,14 @@
-from typing import List, Dict, Any, Optional
-from enum import Enum
 import logging
+from enum import Enum
+from typing import List, Dict, Any, Optional
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableSerializable, RunnablePassthrough
 
 from core.database import db_manager
 from core.elasticsearch_client import es_client
+from core.llm_client import llm_client
 from models.chunk import Chunk
 from utils.embedding_utils import embedding_utils
 
@@ -116,6 +121,25 @@ class SearchService:
             min_score=min_score
         )
 
+    def _search_for_chat(self, kb_id: str, query: str) -> List[Dict[str, Any]]:
+        size = 3
+        min_score = 0.5
+        text_weight = 0.3
+        vector_weight = 0.7
+        """混合搜索"""
+        # 获取查询向量
+        results = self.search(
+            kb_id=kb_id,
+            query=query,
+            search_type=SearchType.HYBRID,
+            top_k=size,
+            min_score=min_score,
+            use_score_relevance=True,
+            text_weight=text_weight,
+            vector_weight=vector_weight
+        )
+        return results
+
     def get_similar_chunks(self, chunk_id: str, kb_id: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """获取相似分块"""
         try:
@@ -132,3 +156,53 @@ class SearchService:
         except Exception as e:
             logger.error(f"获取相似分块失败: {e}")
             return []
+
+    def chat(self, kb_id: str, query: str) -> Optional[str]:
+        qa_chain =  self.setup_qa_chain()
+        answer = qa_chain.invoke({"kb_id": kb_id, "query_text": query})
+        return answer
+
+    def setup_qa_chain(self) -> RunnableSerializable[Any, str]:
+        """设置基于ES检索的问答链"""
+
+        # 定义问答提示模板
+        prompt_template = """
+                你是一个问答机器人。
+                你的任务是根据下述已知信息回答用户问题。
+                确保你的回复完全依据下述已知信息。不要编造答案。
+                如果下述已知信息不足以回答用户的问题，请直接回复"我无法回答您的问题"。
+
+                已知信息:
+                {context}
+
+                用户问：
+                {question}
+
+                请用中文回答用户问题。
+                """
+
+        # 定义问答提示模板
+        prompt = ChatPromptTemplate.from_messages([
+            ("human", prompt_template),  # 更规范的写法，直接使用角色+内容的元组
+        ])
+
+        # 自定义一个函数，将检索到的文档字典列表格式化为字符串
+        def format_context(docs: List[Dict[str, Any]]) -> str:
+            return "\n\n".join(doc["content"] for doc in docs)
+
+        # 构建问答链：通过RunnablePassthrough获取输入参数，动态传递给搜索方法
+        chain = (
+                {
+                    # 从输入中获取kb_id和query_text，传递给_search_for_chat方法
+                    "context": RunnablePassthrough.assign(
+                        docs=lambda x: self._search_for_chat(x["kb_id"], x["query_text"])
+                    ) | (lambda x: format_context(x["docs"])),  # 格式化搜索结果
+                    "question": lambda x: x["query_text"]  # 从输入中获取问题
+                }
+                | prompt
+                | llm_client.llm
+                | StrOutputParser()
+        )
+
+        return chain
+
