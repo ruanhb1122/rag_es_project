@@ -2,8 +2,12 @@ import logging
 import os
 import tempfile
 import uuid
+from string import Template
 from typing import List, Dict, Any, Optional, Tuple
 
+from langchain_community.graphs.graph_document import GraphDocument
+from langchain_core.prompts import HumanMessagePromptTemplate, SystemMessagePromptTemplate, ChatPromptTemplate
+from langchain_experimental.graph_transformers import LLMGraphTransformer
 from sqlalchemy import desc, asc
 from werkzeug.datastructures import FileStorage
 
@@ -12,8 +16,11 @@ from core.minio_client import minio_client
 from models.chunk import Chunk
 from models.document import Document
 from services.chunk_service import ChunkService
+from services.knowledge_graph_service import KnowledgeGraphService
 from utils.embedding_utils import embedding_utils
 from utils.text_splitter import TextSplitter
+from core.llm_client import llm_client
+from utils.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +31,7 @@ class DocumentService:
     def __init__(self):
         self.text_splitter = TextSplitter()
         self.chunk_service = ChunkService()
+        self.knowledge_graph_service = KnowledgeGraphService()
 
     def create_document(self, document_name: str, kb_id: str,
                         file: FileStorage, created_by: str = None) -> Optional[str]:
@@ -57,7 +65,12 @@ class DocumentService:
 
                 # 处理文档内容
                 file.stream.seek(0)  # 重置文件指针
+
+                # 处理文件数据，使用es、embedding 等方式处理文档内容  【普通RAG方案】
                 self._process_document_content(document_id, document_name, kb_id, file.stream.read())
+
+                # 改造成graph知识图谱模型处室文档内容，将数据存储到neo4j数据库中   【graphRAG方案】
+                # self._process_document_graph(document_id, document_name, kb_id, file.stream.read())
 
                 logger.info(f"文档创建成功: {document_id}")
                 return document_id
@@ -71,6 +84,49 @@ class DocumentService:
             except:
                 pass
             return None
+
+
+    def _process_document_graph(self, document_id: str, document_name: str,
+                                  kb_id: str, file_data: bytes):
+        """处理文档的图谱（数据处理改成知识图谱）"""
+        # 创建临时文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(document_name)[1]) as temp_file:
+            temp_file.write(file_data)
+            temp_file_path = temp_file.name
+
+        try:
+            # 分割文档
+            document_list: List[Document] = self.text_splitter.load_and_split_documents(
+                temp_file_path, document_id, kb_id
+            )
+
+            graph_documents = []
+            for doc in document_list[:5]:
+                nodes = ['公司', '产品', '人']
+
+                system_template = config.get("graph_prompt")
+                template = Template(system_template)
+                humn_str = f"你是一个知识图谱工程专家，请帮我提取出上下文中的文本中的 {','.join(nodes)} 等实体和关系以及适当的描述信息"
+                humn = HumanMessagePromptTemplate.from_template(humn_str)
+                sysprompt = template.safe_substitute(entity_types=','.join(nodes),
+                                                     input_text=doc.page_content)
+                system_message_prompt = SystemMessagePromptTemplate.from_template(sysprompt)
+                prompt = ChatPromptTemplate.from_messages([system_message_prompt, humn])
+                graph = LLMGraphTransformer(llm=llm_client.llm, prompt=prompt, allowed_nodes=nodes, node_properties=True)
+
+                res_data: List[GraphDocument] = graph.convert_to_graph_documents([doc])
+                graph_documents.append(res_data[0])
+
+            self.knowledge_graph_service.sync_graph_documents(graph_documents, 'test_chunk_1')
+
+        except Exception as e:
+            logger.error(f"文档图谱处理失败: {e}")
+            raise e
+        finally:
+            # 删除临时文件
+            os.unlink(temp_file_path)
+
+
 
     def _process_document_content(self, document_id: str, document_name: str,
                                   kb_id: str, file_data: bytes):

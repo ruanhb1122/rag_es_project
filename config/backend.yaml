@@ -63,3 +63,163 @@ llm:
   # 取值范围通常为0-1，0表示结果最确定、最一致，1表示结果最随机、最多样
   # 此处设置为0，适合需要精确、稳定输出的场景
   temperature: 0
+
+
+neo4j:
+  uri: bolt://localhost:7687
+  username: neo4j
+  password: neo4j123456
+  database: rag_demo
+  max_connection_lifetime: 3600
+
+
+graph_prompt: |
+  -目标-
+  给定一份可能与该活动相关的文本文件和一系列实体类型，从文本中识别出所有这些类型的实体以及这些实体之间的所有关系。
+
+  -步骤-
+  1. 识别所有实体。对于每个识别出的实体，提取以下信息：
+  - entity_name：实体的名称，大写
+  - entity_type：以下类型之一：${entity_types}
+  - description：对实体的属性和活动的全面描述
+  将每个实体格式化为（'entity"{{tuple_delimiter}}<entity_name>{{tuple_delimiter}}<entity_type>{{tuple_delimiter}}<description>）
+
+  2. 从步骤1中识别的实体中，识别所有（source_entity，target_entity）对，这些实体对彼此之间有*明确的关联*。
+  对于每对相关实体，提取以下信息：
+  - source_entity：步骤1中识别的源实体的名称
+  - target_entity：步骤1中识别的目标实体的名称
+  - relationship_description：解释你认为源实体和目标实体彼此相关的原因
+  - relationship_strength：一个介于1到10之间的整数分数，表示源实体和目标实体之间关系的强度
+  将每种关系格式化为（"relationship"{{tuple_delimiter}}<source_entity>{{tuple_delimiter}}<target_entity>{{tuple_delimiter}}<relationship_description>{{tuple_delimiter}}<relationship_strength>）
+
+  3. 将步骤1和2中识别的所有实体和关系作为单个列表返回，使用{{record_delimiter}}作为列表分隔符。
+
+  4. 如果需要翻译成中文，只需翻译描述，其他内容不变！
+
+  5. 完成后，输出{{completion_delimiter}}。
+
+  ######################
+  -示例-
+  ######################
+  示例1：
+  实体类型：ORGANIZATION，PERSON
+  文本：
+  威尔丹蒂斯中央机构定于每周一和周四举行例会。该机构计划于太平洋夏令时间周四下午1:30公布最新政策决议，随后将由中央机构主席马丁·史密斯主持召开新闻发布会并回答记者提问。市场普遍预期货币政策委员会将维持基准利率在3.5%-3.75%的当前区间不变。
+  ######################
+  输出：
+  （"entity"{{tuple_delimiter}}中央机构{{tuple_delimiter}}ORGANIZATION{{tuple_delimiter}}中央机构是威尔丹蒂斯的联邦储备，负责在周一和周四设定利率）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}马丁·史密斯{{tuple_delimiter}}PERSON{{tuple_delimiter}}马丁·史密斯是中央机构的主席）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}货币政策委员会{{tuple_delimiter}}ORGANIZATION{{tuple_delimiter}}中央机构委员会就利率和威尔丹蒂斯货币供应量增长做出关键决策）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}马丁·史密斯{{tuple_delimiter}}中央机构{{tuple_delimiter}}马丁·史密斯是中央机构的主席，将在新闻发布会上回答问题{{tuple_delimiter}}9）
+  {{completion_delimiter}}
+
+  ######################
+  示例2：
+  实体类型：ORGANIZATION
+  文本：
+  TechGlobal（TG）的股票在周四全球交易所上市首日飙升。但IPO专家警告说，这家半导体公司的公开市场首次亮相并不能代表其他新上市公司可能的表现。
+
+  TechGlobal，一家曾经的上市公司，于2014年被Vision Holdings私有化。这家知名的芯片设计商声称其产品为85％的高端智能手机提供动力。
+  ######################
+  输出：
+  （"entity"{{tuple_delimiter}}TECHGLOBAL{{tuple_delimiter}}ORGANIZATION{{tuple_delimiter}}TechGlobal是一家现在在全球交易所上市的股票，为85％的高端智能手机提供动力）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}VISION HOLDINGS{{tuple_delimiter}}ORGANIZATION{{tuple_delimiter}}Vision Holdings是一家曾经拥有TechGlobal的公司）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}TECHGLOBAL{{tuple_delimiter}}VISION HOLDINGS{{tuple_delimiter}}Vision Holdings从2014年至今曾经拥有TechGlobal{{tuple_delimiter}}5）
+  {{completion_delimiter}}
+
+  ######################
+  示例3：
+  实体类型：ORGANIZATION，GEO，PERSON
+  文本：
+  五名被广泛认为是人质的奥雷利安人，在费鲁扎德被监禁了8年，如今正踏上返回奥雷利安的归途。
+  由昆塔拉安排的这笔交易最终完成时，费鲁齐的80亿美元资金被转移到了昆塔拉首都克罗哈拉的金融机构
+  这次交换是在费鲁扎德首都提鲁齐亚发起的，随后四名男子和一名女子（他们也是费鲁齐人）登上了一架包机前往克罗哈拉。
+  他们受到了高级奥雷利安官员的欢迎，目前正在前往奥雷利安首都卡申的途中。
+
+  奥雷利安人包括39岁的商人萨缪尔·纳马拉，他此前被关押在提鲁齐亚的阿尔哈米亚监狱，还有59岁的记者杜克·巴塔格拉尼和53岁的环保主义者梅格·塔兹巴赫，后者也拥有布拉蒂纳国籍
+  ######################
+  输出：
+  （"entity"{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}}GEO{{tuple_delimiter}}在费鲁扎德 将 奥雷利安人监禁 作为人质）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}奥雷利安{{tuple_delimiter}}GEO{{tuple_delimiter}}寻求释放人质的国家）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}昆塔拉{{tuple_delimiter}}GEO{{tuple_delimiter}}谈判用金钱交换人质的国家）
+  {{record_delimiter}}
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}提鲁齐亚{{tuple_delimiter}}GEO{{tuple_delimiter}}奥雷利安人被关押的费鲁扎德的首都）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}克罗哈拉{{tuple_delimiter}}GEO{{tuple_delimiter}}昆塔拉的首都城市）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}卡申{{tuple_delimiter}}GEO{{tuple_delimiter}}奥雷利安的首都城市）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}萨缪尔·纳马拉{{tuple_delimiter}}PERSON{{tuple_delimiter}}在提鲁齐亚的哈米亚监狱度过时光的奥雷利安）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}哈米亚监狱{{tuple_delimiter}}GEO{{tuple_delimiter}}提鲁齐亚的监狱）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}杜克·巴塔格拉尼{{tuple_delimiter}}PERSON{{tuple_delimiter}}被关押为人质的奥雷利安记者）
+  {{record_delimiter}}
+  （"entity"{{tuple_delimiter}}梅格·塔兹巴赫{{tuple_delimiter}}PERSON{{tuple_delimiter}}被关押为人质的布拉蒂纳国籍和环保主义者）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}}奥雷利安{{tuple_delimiter}}费鲁扎德与奥雷利安就人质交换进行了谈判{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}昆塔拉{{tuple_delimiter}}奥雷利安{{tuple_delimiter}}昆塔拉促成了费鲁扎德和奥雷利安之间的人质交换{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}昆塔拉{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}} 昆塔拉促成了费鲁扎德和奥雷利安之间的人质交换{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}萨缪尔·纳马拉{{tuple_delimiter}}哈米亚监狱{{tuple_delimiter}}萨缪尔·纳马拉是哈米亚监狱的囚犯{{tuple_delimiter}}8）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}萨缪尔·纳马拉{{tuple_delimiter}}梅格·塔兹巴赫{{tuple_delimiter}}萨缪尔·纳马拉和梅格·塔兹巴赫在同一人质释放中被交换{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}萨缪尔·纳马拉{{tuple_delimiter}}杜克·巴塔格拉尼{{tuple_delimiter}}萨缪尔·纳马拉和杜克·巴塔格拉尼在同一人质释放中被交换{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}梅格·塔兹巴赫{{tuple_delimiter}}杜克·巴塔格拉尼{{tuple_delimiter}} 梅格·塔兹巴赫和杜克·巴塔格拉尼 在同一人质释放中被交换{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}萨缪尔·纳马拉{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}}萨缪尔·纳马拉是被关押在费鲁扎德的人质{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}梅格·塔兹巴赫{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}}梅格·塔兹巴赫是被关押在费鲁扎德的人质{{tuple_delimiter}}2）
+  {{record_delimiter}}
+  （"relationship"{{tuple_delimiter}}杜克·巴塔格拉尼I{{tuple_delimiter}}费鲁扎德{{tuple_delimiter}}杜克·巴塔格拉尼是被关押在费鲁扎德的人质{{tuple_delimiter}}2）
+  {{completion_delimiter}}
+
+  -真实数据-
+  ######################
+  实体类型：${entity_types}
+  文本：${input_text}
+  ######################
+  输出：
+#llm_timeout: 3601
+
+
+graph_query_prompt: |
+  -目标-
+  给定一份文本文件和指定的实体类型列表，从文本中识别出所有指定类型的实体。
+
+  -步骤-
+  1. 识别所有实体。对于每个识别出的实体，提取以下信息：
+     - entity_name：实体的名称（英文实体需大写）
+     - entity_type：指定的实体类型之一（${entity_types}）
+     将实体格式化为：("entity"{{tuple_delimiter}}<entity_name>{{tuple_delimiter}}<entity_type><description>)
+
+  2. 将所有实体作为列表返回，使用{{record_delimiter}}分隔
+
+  3. 完成后输出{{completion_delimiter}}
+
+  -示例-
+  实体类型：ORGANIZATION，PERSON
+  文本：
+  "TechGlobal（TG）的股票周四上市。CEO李明表示：'这次IPO标志着新篇章'"
+
+  输出：
+  ("entity"{{tuple_delimiter}}TECHGLOBAL{{tuple_delimiter}}ORGANIZATION)
+  {{record_delimiter}}
+  ("entity"{{tuple_delimiter}}李明{{tuple_delimiter}}PERSON)
+  {{completion_delimiter}}
+
+  -真实数据-
+  实体类型：${entity_types}
+  文本：${input_text}

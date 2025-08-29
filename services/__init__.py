@@ -1,1 +1,1 @@
-__all__ = ["chunk_service", "document_service", "search_service"]
+__all__ = ["chunk_service", "document_service", "search_service", "knowledge_graph_service"]
