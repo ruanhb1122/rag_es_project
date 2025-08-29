@@ -1,11 +1,16 @@
+import logging
 from typing import List, Dict, Any
 import re
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_community.document_loaders import Docx2txtLoader
 import uuid
+
+from langchain_core.documents import Document
+
 from utils.config import config
 
+logger = logging.getLogger(__name__)
 
 class TextSplitter:
     """文本分割工具"""
@@ -64,6 +69,38 @@ class TextSplitter:
 
         except Exception as e:
             raise Exception(f"文件处理失败: {str(e)}")
+
+
+    def load_and_split_documents(self, file_path: str, document_id: str, kb_id: str) -> List[Document]:
+        """加载并分割文件，返回List<Documnet>"""
+        try:
+            # 根据文件扩展名选择加载器
+            if file_path.endswith('.pdf'):
+                loader = PyPDFLoader(file_path)
+            elif file_path.endswith('.docx'):
+                loader = Docx2txtLoader(file_path)
+            elif file_path.endswith('.txt'):
+                loader = TextLoader(file_path, encoding='utf-8')
+            else:
+                raise ValueError(f"不支持的文件格式: {file_path}")
+
+            # 加载文档
+            documents = loader.load()
+
+            # 提取文本内容
+            text_content = '\n'.join([doc.page_content for doc in documents])
+
+            chunks = self.splitter.split_text(text_content)
+
+            docs = [Document(page_content=chunk) for chunk in chunks]
+            # 分割文本
+            return docs
+
+        except Exception as e:
+            logging.error(f"文件处理失败: {str(e)}")
+            raise Exception(f"文件处理失败: {str(e)}")
+
+
 
     def clean_text(self, text: str) -> str:
         """清理文本"""
